@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Notes</string>
+    <string name="Add_item">Add item</string>
+    <string name="Title">Title</string>
+    <string name="Body">Body</string>
+    <string name="Cancel">Cancel</string>
+    <string name="Save">Save</string>
+    <string name="Undo">Undo</string>
+    <string name="go_Back" />
+</resources>
