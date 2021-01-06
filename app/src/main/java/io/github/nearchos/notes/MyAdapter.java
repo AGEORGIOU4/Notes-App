@@ -7,71 +7,83 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.snackbar.Snackbar;
-
-import java.util.List;
-
-import io.github.nearchos.notes.db.NotesRoomDatabase;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Vector;
 
 public class MyAdapter extends RecyclerView.Adapter<MyAdapter.ViewHolder> {
 
-    private List<Note> listItems;
-    public Context context;
+    public class ViewHolder extends RecyclerView.ViewHolder {
 
-    public MyAdapter(List<Note> listItems, Context context) {
-        this.listItems = listItems;
-        this.context = context;
+        // each data item has a 2 text views, a bool and a delete button
+        public TextView textViewTitle;
+        public TextView textViewBody;
+        public TextView textViewTimestamp;
+        public CheckBox starredCheckBox;
+        public Button editNoteBtn;
+
+        public ViewHolder(View itemView) {
+            super(itemView);
+
+            this.textViewTitle = itemView.findViewById(R.id.textViewTitle);
+            this.textViewBody = itemView.findViewById(R.id.textViewBody);
+            this.textViewTimestamp = itemView.findViewById(R.id.textViewTimestamp);
+            this.starredCheckBox = itemView.findViewById(R.id.starredCheckBox);
+            this.editNoteBtn = itemView.findViewById(R.id.editNoteBtn);
+        }
     }
 
+    private Vector<Note> listItems;
+    private OnItemClickListener onItemClickListener;
+    private OnItemLongClickListener onItemLongClickListener;
+    private OnStarClickListener onStarClickListener;
+    private OnEditClickListener onEditClickListener;
+
+    public MyAdapter(final Vector<Note> listItems, OnItemClickListener onItemClickListener, OnItemLongClickListener onItemLongClickListener,
+                     OnStarClickListener onStarClickListener, OnEditClickListener onEditClickListener) {
+        this.listItems = listItems;
+        this.onItemClickListener = onItemClickListener;
+        this.onItemLongClickListener = onItemLongClickListener;
+        this.onStarClickListener = onStarClickListener;
+        this.onEditClickListener = onEditClickListener;
+    }
+
+    // Create new views (invoked by the layout manager)
     @Override
-    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public MyAdapter.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+
         View v = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.list_item, parent, false);
         return new ViewHolder(v);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+    public void onBindViewHolder(final ViewHolder holder, final int position) {
         Note listItem = listItems.get(position);
 
-        holder.textViewHead.setText(listItem.getTitle());
-        holder.textViewDesc.setText(listItem.getBody());
+        //Convert System.currentTimeMillis to Date
+        long noteMilliseconds = listItem.getTimestamp();
+        SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm");
+        Date resultDate = new Date(noteMilliseconds);
 
-        // Move to edit activity when click on a list item
-        holder.linearLayout.setOnClickListener(v -> {
-            String title = listItem.getTitle();
-            System.out.println(title);
-            Intent intent = new Intent(v.getContext(), UpdateNote.class);
-            context.startActivity(intent);
-        });
+        // - get element from your data set at this position
+        // - replace the contents of the view with that element
+        holder.textViewTitle.setText(listItem.getTitle());
+        holder.textViewBody.setText(listItem.getBody());
+        holder.textViewTimestamp.setText(sdf.format(resultDate));
+        holder.starredCheckBox.setChecked(listItem.isStarred());
 
-        holder.deleteBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                Note tmpNote = new Note(listItem.getTitle(), listItem.getBody(), listItem.getTimestamp(), listItem.isStarred());
-
-                Snackbar snackbar = Snackbar.make(v, "Do you want to delete " + listItem.getTitle() + " ?", Snackbar.LENGTH_LONG)
-                        .setAction("DELETE", new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                Toast.makeText(v.getContext(), "Deleted ", Toast.LENGTH_SHORT).show();
-                                delete(listItem);
-                                Intent intent = new Intent(v.getContext(), MainActivity.class);
-                                context.startActivity(intent);
-                            }
-                        });
-                snackbar.show();
-            }
-        });
+        holder.itemView.setOnClickListener(v -> onItemClickListener.itemClicked(v, position, listItem.getTitle()));
+        holder.itemView.setOnLongClickListener(v -> onItemLongClickListener.itemLongClicked(v, position, listItem.getTitle()));
+        holder.starredCheckBox.setOnClickListener(v -> onStarClickListener.itemClicked(v, position, listItem.isStarred()));
+        holder.editNoteBtn.setOnClickListener(v -> onEditClickListener.itemClicked(v, position, listItem.getTitle(), listItem.getBody(), listItem.isStarred(),
+                listItem.getTimestamp()));
     }
 
     @Override
@@ -79,25 +91,22 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.ViewHolder> {
         return listItems.size();
     }
 
-    public class ViewHolder extends RecyclerView.ViewHolder {
-
-        public TextView textViewHead;
-        public TextView textViewDesc;
-        public LinearLayout linearLayout;
-        public Button deleteBtn;
-
-        public ViewHolder(@NonNull View itemView) {
-            super(itemView);
-            textViewHead = itemView.findViewById(R.id.textViewHead);
-            textViewDesc = itemView.findViewById(R.id.textViewDesc);
-            linearLayout = itemView.findViewById(R.id.linearLayout);
-            deleteBtn = itemView.findViewById(R.id.deleteBtn);
-        }
+    interface OnItemClickListener {
+        void itemClicked(View v, int pos, String value);
     }
 
-    void delete(final Note note) {
-        NotesRoomDatabase.getDatabase(context).notesDao().delete(note);
+    interface OnItemLongClickListener {
+        boolean itemLongClicked(View v, int pos, String value);
     }
+
+    interface OnStarClickListener {
+        void itemClicked(View v, int pos, boolean checked);
+    }
+
+    interface  OnEditClickListener {
+        void itemClicked (View v, int pos, String title, String body, boolean checked, long timestamp);
+    }
+
 }
 
 

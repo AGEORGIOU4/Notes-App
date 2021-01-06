@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".AddNote">
+    tools:context=".EditNote">
 
     <androidx.cardview.widget.CardView
         android:id="@+id/addItemCardView"
@@ -26,7 +26,7 @@
                 android:text="Title" />
 
             <EditText
-                android:id="@+id/add_Title"
+                android:id="@+id/edit_Title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
@@ -39,7 +39,7 @@
                 android:text="Body" />
 
             <EditText
-                android:id="@+id/add_Body"
+                android:id="@+id/edit_Body"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textSize="16sp"
@@ -51,7 +51,7 @@
                 android:text="Starred" />
 
             <CheckBox
-                android:id="@+id/add_Starred"
+                android:id="@+id/edit_Starred"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="end" />
@@ -63,28 +63,23 @@
                 android:layout_margin="16dp"
                 android:orientation="horizontal">
 
-                <com.google.android.material.floatingactionbutton.FloatingActionButton
-                    android:id="@+id/return_btn"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+
+                <Button
+                    android:id="@+id/goBackBtn"
+                    android:layout_width="100dp"
+                    android:layout_height="match_parent"
                     android:layout_gravity="bottom|start"
-                    android:layout_margin="16dp"
-                    android:backgroundTint="@color/purple_200"
-                    android:contentDescription="@string/go_Back"
-                    android:rotation="-45"
-                    android:src="@drawable/ic_return"
-                    app:borderWidth="0sp"
+                    android:text="Back"
                     android:onClick="goBack"/>
 
-                <com.google.android.material.floatingactionbutton.FloatingActionButton
-                    android:id="@+id/insert_note_btn"
-                    android:layout_width="wrap_content"
+                <Button
+                    android:id="@+id/editNoteBtn"
+                    android:layout_width="100dp"
                     android:layout_height="wrap_content"
                     android:layout_gravity="bottom|end"
-                    android:layout_margin="16dp"
-                    android:contentDescription="@string/Add_item"
-                    android:src="@android:drawable/ic_input_add"
-                    android:onClick="addItem"/>
+                    android:backgroundTint="@color/teal_200"
+                    android:text="@string/OK"
+                    android:onClick="editItem"/>
 
             </androidx.coordinatorlayout.widget.CoordinatorLayout>
         </LinearLayout>

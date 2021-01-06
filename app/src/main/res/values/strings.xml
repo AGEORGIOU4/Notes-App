@@ -7,4 +7,6 @@
     <string name="Save">Save</string>
     <string name="Undo">Undo</string>
     <string name="go_Back" />
+    <string name="edit_btn">EDIT</string>
+    <string name="OK">OK</string>
 </resources>

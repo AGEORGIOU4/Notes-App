@@ -11,11 +11,12 @@ import androidx.room.PrimaryKey;
 @Entity(tableName = "notes")
 public class Note {
 
-    @PrimaryKey(autoGenerate = true) private int id;
-    private final String title;
-    private final String body;
-    private final long timestamp;
-    private final boolean starred;
+    @PrimaryKey(autoGenerate = true)
+    private int id;
+    private String title;
+    private String body;
+    private long timestamp;
+    private boolean starred;
 
     public Note(int id, String title, String body, long timestamp, boolean starred) {
         this.id = id;
@@ -23,6 +24,10 @@ public class Note {
         this.body = body;
         this.timestamp = timestamp;
         this.starred = starred;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     @Ignore
@@ -51,5 +56,21 @@ public class Note {
 
     public boolean isStarred() {
         return starred;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public void setBody(String body) {
+        this.body = body;
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public void setStarred(boolean starred) {
+        this.starred = starred;
     }
 }

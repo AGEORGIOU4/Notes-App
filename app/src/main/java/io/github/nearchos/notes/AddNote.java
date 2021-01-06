@@ -8,20 +8,28 @@ import android.os.Bundle;
 import android.text.InputType;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.BaseTransientBottomBar;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
+import java.util.Vector;
+import java.util.concurrent.Executors;
 
+import io.github.nearchos.notes.db.NotesDao;
 import io.github.nearchos.notes.db.NotesRoomDatabase;
 
 public class AddNote extends AppCompatActivity {
 
-    private EditText add_Title;
+    EditText add_Title;
+    EditText add_Body;
+    CheckBox add_Starred;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,14 +37,22 @@ public class AddNote extends AppCompatActivity {
         setContentView(R.layout.activity_add_note);
 
         add_Title = findViewById(R.id.add_Title);
+        add_Body = findViewById(R.id.add_Body);
+        add_Starred = findViewById(R.id.add_Starred);
 
-        // Set first letter as capital, auto focus on edit box and automatically open keyboard
-        add_Title.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-        add_Title.requestFocus();
+    }
 
-        InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
-        imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, InputMethodManager.HIDE_IMPLICIT_ONLY);
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+    }
 
+    public void goBack(View v) {
+        finish();
+        overridePendingTransition(0, 0);
+        Intent intent = new Intent(AddNote.this, MainActivity.class);
+        overridePendingTransition(0, 0);
+        startActivity(intent);
     }
 
     void insert(Note note) {
@@ -44,27 +60,20 @@ public class AddNote extends AppCompatActivity {
     }
 
     // Add note
-    public void add(View view) {
-        // Format current milliseconds in Date and Time
-        long currentTimeInMillis = System.currentTimeMillis();
-        SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm");
-        Date resultDate = new Date(currentTimeInMillis);
+    public void addItem(View view) {
+        add_Title = findViewById(R.id.add_Title);
+        add_Body = findViewById(R.id.add_Body);
+        add_Starred = findViewById(R.id.add_Starred);
 
-        if(add_Title.getText().toString().length() != 0) {
-            Note testNote = new Note(add_Title.getText().toString(), sdf.format(resultDate), System.currentTimeMillis(), true);
-            insert(testNote);
-            Snackbar.make(view.getRootView(), "Added!", BaseTransientBottomBar.LENGTH_SHORT).show();
-            InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
-            imm.hideSoftInputFromWindow(add_Title.getWindowToken(), 0);
-            Intent intent = new Intent(this, MainActivity.class);
-            startActivity(intent);
+        if (add_Title.getText().toString().matches("")) {
+            Toast.makeText(this, "Enter Title", Toast.LENGTH_SHORT).show();
         } else {
-            Toast.makeText(this, "Please Add a Title", Toast.LENGTH_SHORT).show();
-        }
-    }
+            Note testNote = new Note(add_Title.getText().toString(), add_Body.getText().toString(), System.currentTimeMillis(), add_Starred.isChecked());
+            insert(testNote);
 
-    public void goBack(View view) {
-        Intent intent = new Intent(this, MainActivity.class);
-        startActivity(intent);
+            finish();
+            Intent mainActivityIntent = new Intent(this, MainActivity.class);
+            startActivity(mainActivityIntent);
+        }
     }
 }
