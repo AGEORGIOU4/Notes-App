@@ -69,7 +69,7 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.ViewHolder> {
 
         //Convert System.currentTimeMillis to Date
         long noteMilliseconds = listItem.getTimestamp();
-        SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm");
+        SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy HH:mm");
         Date resultDate = new Date(noteMilliseconds);
 
         // - get element from your data set at this position
