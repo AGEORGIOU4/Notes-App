@@ -3,7 +3,7 @@ package io.github.nearchos.notes;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.CheckBox;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -30,23 +30,35 @@ public class MainActivity extends AppCompatActivity implements MyAdapter.OnItemC
     private RecyclerView recyclerView;
     private MyAdapter adapter;
     private LinearLayoutManager linearLayoutManager;
-    private CheckBox starredCheckBox;
+    private View root;
 
-    ItemTouchHelper.SimpleCallback itemTouchHelperCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
-        @Override
-        public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
-            return false;
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        root = findViewById(R.id.root);
+        recyclerView = findViewById(R.id.recycler_view);
+
+        // Item helper for swipe events
+        new ItemTouchHelper((itemTouchHelperCallback)).attachToRecyclerView(recyclerView);
+
+        // Initialize each note from the db to the notesList
+        for (int i = 0; i <= getAllNotesSortedByTimestamp().size() - 1; i++) {
+            notesList.add(getAllNotesSortedByTimestamp().get(i));
         }
 
-        @Override
-        public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-            // Create a temp note if user wants to undo
-            Note tmpNote = notesList.get(viewHolder.getAdapterPosition());
+        // Get Recycler from activity_main and set parameters
+        recyclerView.setHasFixedSize(true);
 
-            delete(notesList.get(viewHolder.getAdapterPosition()));
-            // Clear the list and update it
-        }
-    };
+        linearLayoutManager = new LinearLayoutManager(this);
+        recyclerView.setLayoutManager(linearLayoutManager);
+
+        adapter = new MyAdapter(notesList, this, this, this::itemClicked, this::itemClicked);
+        recyclerView.setAdapter(adapter);
+
+        getEditNoteData();
+    }
 
     @Override
     protected void onResume() {
@@ -60,66 +72,20 @@ public class MainActivity extends AppCompatActivity implements MyAdapter.OnItemC
         });
     }
 
-    List<Note> getAllNotesSortedByTimestamp() {
-        return NotesRoomDatabase.getDatabase(this).notesDao().getNotesSortedByTimestamp();
-    }
-
-    public void startAddNoteActivity(View v) {
-        finish();
-        overridePendingTransition(0, 0);
-        Intent intent = new Intent(MainActivity.this, AddNote.class);
-        overridePendingTransition(0, 0);
-        startActivity(intent);
-    }
-
-    // Show item body on a toast
-    @Override
-    public void itemClicked(View v, int pos, String value) {
-        Snackbar.make(recyclerView, notesList.get(pos).getBody() + " (long press to delete)", Snackbar.LENGTH_SHORT).show();
-    }
-
-    // Delete Item
-    @Override
-    public boolean itemLongClicked(View v, int pos, String value) {
-        // Create a temp note if user wants to undo
-        Note tmpNote = notesList.get(pos);
-
-        delete(notesList.get(pos));
-        // Clear the list and update it
-        Executors.newSingleThreadExecutor().execute(() -> {
-            final NotesDao myDAO = NotesRoomDatabase.getDatabase(this).notesDao();
-            notesList.clear();
-            notesList.addAll(myDAO.getNotesSortedByTimestamp());
-            runOnUiThread(() -> adapter.notifyDataSetChanged());
-        });
-        Snackbar snackbar = Snackbar.make(v, "Do you want to delete " + tmpNote.getTitle() + " ?", Snackbar.LENGTH_LONG)
-                .setAction("UNDO", new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        // Undo
-                        insert(tmpNote);
-                        Executors.newSingleThreadExecutor().execute(() -> {
-                            final NotesDao myDAO = NotesRoomDatabase.getDatabase(getApplicationContext()).notesDao();
-                            notesList.clear();
-                            notesList.addAll(myDAO.getNotesSortedByTimestamp());
-                            runOnUiThread(() -> adapter.notifyDataSetChanged());
-                        });
-                    }
-                });
-        snackbar.show();
-        return true;
+    void insert(Note note) {
+        NotesRoomDatabase.getDatabase(this).notesDao().insert(note);
     }
 
     void update(Note note) {
         NotesRoomDatabase.getDatabase(this).notesDao().update(note);
     }
 
-    void insert(Note note) {
-        NotesRoomDatabase.getDatabase(this).notesDao().insert(note);
-    }
-
     void delete(final Note note) {
         NotesRoomDatabase.getDatabase(this).notesDao().delete(note);
+    }
+
+    List<Note> getAllNotesSortedByTimestamp() {
+        return NotesRoomDatabase.getDatabase(this).notesDao().getNotesSortedByTimestamp();
     }
 
     public void getEditNoteData() {
@@ -146,6 +112,53 @@ public class MainActivity extends AppCompatActivity implements MyAdapter.OnItemC
         }
     }
 
+    public void startAddNoteActivity(View v) {
+        finish();
+        overridePendingTransition(0, 0);
+        Intent intent = new Intent(MainActivity.this, AddNote.class);
+        overridePendingTransition(0, 0);
+        startActivity(intent);
+    }
+
+    // Show item body on a toast
+    @Override
+    public void itemClicked(View v, int pos, String value) {
+        Snackbar.make(recyclerView, "(swipe or hold to delete)", Snackbar.LENGTH_SHORT).show();
+    }
+
+    // Delete Item on hold
+    @Override
+    public boolean itemLongClicked(View v, int pos, String value) {
+        // Create a temp note if user wants to undo
+        Note tmpNote = notesList.get(pos);
+
+        delete(notesList.get(pos));
+        // Clear the list and update it
+        Executors.newSingleThreadExecutor().execute(() -> {
+            final NotesDao myDAO = NotesRoomDatabase.getDatabase(this).notesDao();
+            notesList.clear();
+            notesList.addAll(myDAO.getNotesSortedByTimestamp());
+            runOnUiThread(() -> adapter.notifyDataSetChanged());
+        });
+        Snackbar snackbar = Snackbar.make(v, "You have deleted '" + tmpNote.getTitle() + "'", Snackbar.LENGTH_LONG)
+                .setAction("UNDO", new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        // Undo
+                        insert(tmpNote);
+                        Executors.newSingleThreadExecutor().execute(() -> {
+                            final NotesDao myDAO = NotesRoomDatabase.getDatabase(getApplicationContext()).notesDao();
+                            notesList.clear();
+                            notesList.addAll(myDAO.getNotesSortedByTimestamp());
+                            runOnUiThread(() -> adapter.notifyDataSetChanged());
+                        });
+                    }
+                });
+        snackbar.show();
+        return true;
+    }
+
+    // Handle checkbox(star) clicks
     @Override
     public void itemClicked(View v, int pos, boolean checked) {
         boolean check = notesList.get(pos).isStarred();
@@ -184,29 +197,45 @@ public class MainActivity extends AppCompatActivity implements MyAdapter.OnItemC
         overridePendingTransition(0, 0);
     }
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        recyclerView = findViewById(R.id.recycler_view);
-        new ItemTouchHelper((itemTouchHelperCallback)).attachToRecyclerView(recyclerView);
-
-        // Initialize each note from the db to the notesList
-        for (int i = 0; i <= getAllNotesSortedByTimestamp().size() - 1; i++) {
-            notesList.add(getAllNotesSortedByTimestamp().get(i));
+    // Delete Item on Swipe
+    ItemTouchHelper.SimpleCallback itemTouchHelperCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+        @Override
+        public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+            return true;
         }
 
-        // Get Recycler from activity_main and set parameters
-        recyclerView.setHasFixedSize(true);
+        @Override
+        public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+            // Create a temp note if user wants to undo
 
-        linearLayoutManager = new LinearLayoutManager(this);
-        recyclerView.setLayoutManager(linearLayoutManager);
+            int pos = viewHolder.getAdapterPosition();
 
-        adapter = new MyAdapter(notesList, this, this, this::itemClicked, this::itemClicked);
-        recyclerView.setAdapter(adapter);
+            // Create a temp note if user wants to undo
+            Note tmpNote = notesList.get(pos);
 
-        getEditNoteData();
-        //getStarNoteData();
-    }
+            delete(notesList.get(pos));
+            // Clear the list and update it
+            Executors.newSingleThreadExecutor().execute(() -> {
+                final NotesDao myDAO = NotesRoomDatabase.getDatabase(getApplicationContext()).notesDao();
+                notesList.clear();
+                notesList.addAll(myDAO.getNotesSortedByTimestamp());
+                runOnUiThread(() -> adapter.notifyDataSetChanged());
+            });
+            Snackbar snackbar = Snackbar.make(root, "You have deleted '" + tmpNote.getTitle() + "'", Snackbar.LENGTH_LONG)
+                    .setAction("UNDO", new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            // Undo
+                            insert(tmpNote);
+                            Executors.newSingleThreadExecutor().execute(() -> {
+                                final NotesDao myDAO = NotesRoomDatabase.getDatabase(getApplicationContext()).notesDao();
+                                notesList.clear();
+                                notesList.addAll(myDAO.getNotesSortedByTimestamp());
+                                runOnUiThread(() -> adapter.notifyDataSetChanged());
+                            });
+                        }
+                    });
+            snackbar.show();
+        }
+    };
 }
