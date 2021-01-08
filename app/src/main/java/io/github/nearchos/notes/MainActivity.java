@@ -5,7 +5,9 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.CheckBox;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -30,30 +32,21 @@ public class MainActivity extends AppCompatActivity implements MyAdapter.OnItemC
     private LinearLayoutManager linearLayoutManager;
     private CheckBox starredCheckBox;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        recyclerView = findViewById(R.id.recycler_view);
-
-        // Initialize each note from the db to the notesList
-        for (int i = 0; i <= getAllNotesSortedByTimestamp().size() - 1; i++) {
-            notesList.add(getAllNotesSortedByTimestamp().get(i));
+    ItemTouchHelper.SimpleCallback itemTouchHelperCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+        @Override
+        public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+            return false;
         }
 
-        // Get Recycler from activity_main and set parameters
-        recyclerView.setHasFixedSize(true);
+        @Override
+        public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+            // Create a temp note if user wants to undo
+            Note tmpNote = notesList.get(viewHolder.getAdapterPosition());
 
-        linearLayoutManager = new LinearLayoutManager(this);
-        recyclerView.setLayoutManager(linearLayoutManager);
-
-        adapter = new MyAdapter(notesList, this, this, this::itemClicked, this::itemClicked);
-        recyclerView.setAdapter(adapter);
-
-        getEditNoteData();
-        //getStarNoteData();
-    }
+            delete(notesList.get(viewHolder.getAdapterPosition()));
+            // Clear the list and update it
+        }
+    };
 
     @Override
     protected void onResume() {
@@ -189,5 +182,31 @@ public class MainActivity extends AppCompatActivity implements MyAdapter.OnItemC
         overridePendingTransition(0, 0);
         startActivity(editNoteIntent);
         overridePendingTransition(0, 0);
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        recyclerView = findViewById(R.id.recycler_view);
+        new ItemTouchHelper((itemTouchHelperCallback)).attachToRecyclerView(recyclerView);
+
+        // Initialize each note from the db to the notesList
+        for (int i = 0; i <= getAllNotesSortedByTimestamp().size() - 1; i++) {
+            notesList.add(getAllNotesSortedByTimestamp().get(i));
+        }
+
+        // Get Recycler from activity_main and set parameters
+        recyclerView.setHasFixedSize(true);
+
+        linearLayoutManager = new LinearLayoutManager(this);
+        recyclerView.setLayoutManager(linearLayoutManager);
+
+        adapter = new MyAdapter(notesList, this, this, this::itemClicked, this::itemClicked);
+        recyclerView.setAdapter(adapter);
+
+        getEditNoteData();
+        //getStarNoteData();
     }
 }
